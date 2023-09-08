@@ -35,6 +35,7 @@ jobs:
           path: build/stb_image_load.js
      
       - name: Clone gh-pages
+        if: github.event_name == 'release'
         run: |
             git config --global user.name "GithubActions"
             git config --global user.email "actions@robot.jmonkeyengine.org"
@@ -45,6 +46,7 @@ jobs:
 
       - name: Deploy to  gh-pages  
         shell: bash  
+        if: github.event_name == 'release'
         run: |
           shopt -s dotglob
           echo "1" > build/.nojekyll
