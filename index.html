@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Load and Display Image</title>
+    <script src="./stb_image_load.js"></script>
+    <style>
+        
+        body{
+            background-color: #333;
+            color: #afafaf;
+            text-align: center;
+          
+  
+        }
+      
+        canvas{
+        }
+    </style>
+    <script>
+        async function load(imageUrl,canvas,infoEl){
+            // load to Uint8Array
+            const imageData=new Uint8Array(await (await fetch(imageUrl)).arrayBuffer());
+            const imageLen=imageData.length;
+            const chunk=new Uint8Array(1024); // 1KB chunk sizes
+            const decodedData=await StbImageLoad.load_image(imageLen,offset=>{
+                const start=offset;
+                const end=Math.min(offset+chunk.length,imageLen);
+                chunk.set(imageData.subarray(start,end));
+                return chunk;
+            });
+            const {width,height,channels,data,bpc,bpp}=decodedData;
+
+            const info=(...args)=>{
+                infoEl.innerHTML+=args.join(" ")+"<br>";
+                console.info(...args);
+            };
+
+            info("width:",width);
+            info("height:",height);
+            info("channels:",channels);
+            info("bits per channel:",bpc);
+            info("bits per pixel:",bpp);
+            const ctx = canvas.getContext('2d');
+            ctx.canvas.width=width;
+            ctx.canvas.height=height;
+
+            let rgbaDataBuffer=decodedData.data;
+
+            if(channels==3){
+                const rbgDataBuffer=new Uint8ClampedArray(decodedData.data);
+                rgbaDataBuffer=new Uint8ClampedArray(width*height*4);
+                let j=0;
+                for(let i=0;i<rgbaDataBuffer.length;){
+                    rgbaDataBuffer[i++]=rbgDataBuffer[j++];
+                    rgbaDataBuffer[i++]=rbgDataBuffer[j++];
+                    rgbaDataBuffer[i++]=rbgDataBuffer[j++];
+                    rgbaDataBuffer[i++]= bpc==8 ? 255 : 65535;
+                }         
+            }
+
+            if(bpc==8){ // 8bit
+                const image = new ImageData(width, height);
+                image.data.set(rgbaDataBuffer);         
+                ctx.putImageData(image, 0, 0);
+            }else{ // 16 bit
+                const data16bit=new Uint16Array(rgbaDataBuffer );
+                const data8bit=new Uint8ClampedArray(width*height*4);
+                for(let i=0;i<data16bit.length;i++){
+                    data8bit[i]=Math.floor((data16bit[i]/65536.)*255);
+                }                
+                const image = new ImageData(width, height);
+                image.data.set(data8bit);             
+                ctx.putImageData(image, 0, 0);
+            }
+
+            // free memory
+            await StbImageLoad.free(decodedData);
+
+        }
+
+        async function main(){
+            const test=async (path)=>{
+                const canvasEl=document.createElement("canvas");
+                const infoEl=document.createElement("div");
+         
+                document.body.appendChild(canvasEl);
+                document.body.appendChild(infoEl);
+                await load(path,canvasEl,infoEl);
+
+            }
+            await test("./test.png");
+            await test("./test16bitI.png");
+            await test("./test.jpg");
+            await test("./testNoAlpha.png");
+
+        }
+
+        window.addEventListener("load",main);
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
