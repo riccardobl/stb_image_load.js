@@ -42,6 +42,8 @@ class StbImageLoad {
         out.bpp=out.channels*out.bpc;
         out.imagePtr=imagePtr;
         out.imageRawDataPtr=imageRawData;
+        out.length = out.width * out.height * out.channels;
+        out.lengthInBytes = out.length * out.bpc/8;
 
         await StbImageLoad.free(widthOut);
         await StbImageLoad.free(heightOut);
@@ -72,3 +74,7 @@ class StbImageLoad {
 
 if (typeof exports === 'object' && typeof module === 'object')
   module.exports = StbImageLoad;
+
+if(window){
+    window.StbImageLoad=StbImageLoad;
+}
