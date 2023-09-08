@@ -7,7 +7,7 @@ class StbImageLoad {
         return StbImageLoad._module;
     }    
 
-    static async  load_image(imageSize, byteSupplier, desiredChannels=4, out=undefined){
+    static async load_image(imageSize, byteSupplier, desiredChannels=4, out=undefined, callback=undefined){
         if(!out)out={};
 
         const Module=await StbImageLoad._get();
@@ -47,6 +47,7 @@ class StbImageLoad {
         await StbImageLoad.free(heightOut);
         await StbImageLoad.free(channelsOut);
 
+        if(callback)callback(out);
         return out;        
         
     }
