@@ -26,7 +26,9 @@ const decodedData=await StbImageLoad.load_image(imageLen,offset=>{
     // The provided example will work for any image size, tweak it only if you want to optimize the loading speed for your specific image sizes.
     const start=offset;
     const end=Math.min(offset+chunk.length,imageLen);
-    chunk.set(imageData.subarray(start,end));
+    for (let i = start, j = 0; i < end; i++, j++) {
+        chunk[j] = imageData[i];
+    }
     return chunk;
 });
 // use the image 

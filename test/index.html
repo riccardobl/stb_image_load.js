@@ -26,7 +26,9 @@
             const decodedData=await StbImageLoad.load_image(imageLen,offset=>{
                 const start=offset;
                 const end=Math.min(offset+chunk.length,imageLen);
-                chunk.set(imageData.subarray(start,end));
+                for (let i = start, j = 0; i < end; i++, j++) {
+                    chunk[j] = imageData[i];
+                }
                 return chunk;
             });
             const {width,height,channels,data,bpc,bpp}=decodedData;
