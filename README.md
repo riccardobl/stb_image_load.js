@@ -16,11 +16,19 @@ Nb. Some design choices have been made to simplify the usage from a teavm applic
 // Fetch the image data
 const encodedData=new Uint8Array(await fetch(imageUrl).then(res=>res.arrayBuffer()));
 // Decode with stb_image
-const decodedData=await StbImageLoad.load_image(imageData.length,byteIndex=>{
-    // ByteSupplier: this function returns the bytes one by one
-    return imageData[byteIndex];
+const imageLen=imageData.length;
+const chunk=new Uint8Array(1024); // 1KB chunk sizes
+const decodedData=await StbImageLoad.load_image(imageLen,offset=>{
+    // ByteSupplier: this function returns an Uint8Array containing a chunk of the image data
+    // the Uint8Array can be reused in the next call to this function.
+    // The next call to this function will have an offset that is the sum of the offset passed to this function and the length of the chunk returned by this function.
+    // Nb. Uint8Array can be of any fixed size and can contain garbage data past the end of imageLen, since only up to imageLen bytes will be read.
+    // The provided example will work for any image size, tweak it only if you want to optimize the loading speed for your specific image sizes.
+    const start=offset;
+    const end=Math.min(offset+chunk.length,imageLen);
+    chunk.set(imageData.subarray(start,end));
+    return chunk;
 });
-
 // use the image 
 // const width=decodedData.width;
 // const height=decodedData.height;
