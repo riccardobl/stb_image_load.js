@@ -1,0 +1,77 @@
+name: Build
+on:
+  push:
+  release:
+    types: [published]
+jobs:
+ 
+  build:
+    runs-on: ubuntu-latest    
+    steps: 
+      - name: Clone the repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v8
+        with:
+          version: 'latest'
+          
+      - name: Compile
+        run: |
+          bash compile.sh
+
+      - name: Upload test artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: tests
+          path: build
+
+      - name: Upload library artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: stb_image_load.js
+          path: build/stb_image_load.js
+     
+      - name: Clone gh-pages
+        run: |
+            git config --global user.name "GithubActions"
+            git config --global user.email "actions@robot.jmonkeyengine.org"
+            git clone --no-checkout --single-branch --branch gh-pages https://github.com/${GITHUB_REPOSITORY}.git pages    
+            cd pages
+            git reset --hard `git rev-list --max-parents=0 HEAD`
+            cd ..
+
+      - name: Deploy to  gh-pages  
+        shell: bash  
+        run: |
+          shopt -s dotglob
+          echo "1" > build/.nojekyll
+          cp -Rf build/* pages/
+          cd pages
+          git add .
+          git commit -m "Update data - `date`"        
+          header=$(echo -n "ad-m:${{ secrets.GITHUB_TOKEN }}" | base64)
+          set +e
+          (git -c http.extraheader="AUTHORIZATION: basic $header" push origin gh-pages --force )
+
+      - name: Deploy to GitHub Releases
+        if: github.event_name == 'release'
+        run: |
+          echo "${GITHUB_EVENT_PATH}"
+          cat ${GITHUB_EVENT_PATH}
+          releaseId=$(jq --raw-output '.release.id' ${GITHUB_EVENT_PATH})
+
+          echo "Upload to release $releaseId"
+          filename=build/stb_image_load.js
+          
+          url="https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/$releaseId/assets?name=$(basename $filename)"
+          echo "Upload to $url"
+          curl -L \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          --data-binary @"$filename" \
+          "$url"
+
+        
