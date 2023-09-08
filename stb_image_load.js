@@ -59,7 +59,7 @@ class StbImageLoad {
         return Module._stbi_malloc(size);
     }
 
-    static async  free(loadedData){
+    static async  free(loadedData, callback=undefined){
         const Module=await StbImageLoad._get();
         if(loadedData.imagePtr){
             Module._stbi_free(loadedData.imagePtr);
@@ -69,6 +69,7 @@ class StbImageLoad {
             Module._stbi_free(loadedData.imageRawDataPtr);
             loadedData.imageRawDataPtr=undefined;
         }
+        if(callback)callback();
     }
 }
 
